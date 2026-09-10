@@ -104,8 +104,14 @@ Run directly via `npx`:
 # Auto-detects active dev server (Next.js, Vite, Astro, etc.)
 npx devhop
 
-# Or specify your port explicitly
+# Specify port explicitly
 npx devhop 3000
+
+# Or pass host:port or full URL
+npx devhop localhost:5173
+npx devhop 127.0.0.1:8080
+npx devhop 0.0.0.0:4321
+npx devhop http://localhost:5173
 
 # Or install globally
 npm install -g devhop
@@ -115,11 +121,11 @@ devhop 3000
 ### Options
 
 ```text
-npx devhop                 Auto-detect active dev server port
-npx devhop <port>          Expose port with terminal QR code
-npx devhop <port> --no-qr  Expose port without printing QR code
-npx devhop --help          Show help message
-npx devhop --version       Show version
+npx devhop                   Auto-detect active dev server port
+npx devhop [target]          Expose port, host:port, or URL with QR code
+npx devhop [target] --no-qr  Expose target without printing QR code
+npx devhop --help            Show help message
+npx devhop --version         Show version
 ```
 
 ---

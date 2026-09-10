@@ -1,7 +1,7 @@
 import qrcode from 'qrcode-terminal';
 import pc from 'picocolors';
 import { createMasqueradeProxy } from './proxy.js';
-import { detectDevPorts, findFreePort } from './port.js';
+import { detectDevPorts, findFreePort, parseTarget } from './port.js';
 import { ensureBinary, startTunnel } from './tunnel.js';
 
 const VERSION = '0.1.0';
@@ -12,12 +12,18 @@ ${pc.bold(pc.cyan('🦘 devhop'))} ${pc.dim(`v${VERSION}`)}
 ${pc.dim('Hop local web dev servers onto mobile devices with zero config.')}
 
 ${pc.bold('Usage:')}
-  ${pc.green('npx devhop <port>')}         Expose dev server (e.g. npx devhop 3000)
-  ${pc.green('npx devhop')}                Auto-detect active dev server port
-  ${pc.green('npx devhop <port> --no-qr')} Expose without printing QR code
-  ${pc.green('npx devhop --help')}          Show this help message
-  ${pc.green('npx devhop --version')}       Show version
+  ${pc.green('npx devhop [target]')}         Expose dev server by port, host:port, or URL
+  ${pc.green('npx devhop')}                  Auto-detect active dev server port
+  ${pc.green('npx devhop <target> --no-qr')}  Expose without printing QR code
+  ${pc.green('npx devhop --help')}           Show this help message
+  ${pc.green('npx devhop --version')}        Show version
 
+${pc.bold('Examples:')}
+  ${pc.dim('$')} npx devhop 3000
+  ${pc.dim('$')} npx devhop localhost:5173
+  ${pc.dim('$')} npx devhop 127.0.0.1:8080
+  ${pc.dim('$')} npx devhop 0.0.0.0:4321
+  ${pc.dim('$')} npx devhop http://localhost:5173
 ${pc.bold('Features:')}
   ${pc.green('✔')} ${pc.bold('Fast Refresh & HMR')}     Rewrites headers so Next.js & Vite never block cross-origin websockets
   ${pc.green('✔')} ${pc.bold('Secure Context (HTTPS)')}   Trusted TLS for mobile Safari/Chrome microphone & camera access
@@ -40,10 +46,13 @@ export async function run(args = []) {
 
   const showQr = !args.includes('--no-qr');
   let targetPort = null;
+  let targetHost = '127.0.0.1';
 
-  const portArg = args.find((a) => !a.startsWith('-') && /^\d+$/.test(a));
-  if (portArg) {
-    targetPort = parseInt(portArg, 10);
+  const targetArg = args.find((a) => !a.startsWith('-') && parseTarget(a));
+  if (targetArg) {
+    const parsed = parseTarget(targetArg);
+    targetPort = parsed.port;
+    targetHost = parsed.host;
   } else {
     // Port auto-detection
     console.log(`\n${pc.cyan('●')} Scanning for active dev servers...`);
@@ -58,8 +67,11 @@ export async function run(args = []) {
       );
       console.log(`${pc.dim('  Tip: Specify explicitly with: npx devhop <port>')}`);
     } else {
-      console.error(pc.red('\nNo active dev server detected on standard ports (3000, 5173, 8080, 4321, 30178).'));
-      console.error(`Please specify your dev server port explicitly:\n  ${pc.cyan('npx devhop <port>')}\n`);
+      console.error(pc.red('\nNo active dev server detected on standard dev ports.'));
+      console.error(`Please specify your dev server target explicitly:`);
+      console.error(`  ${pc.cyan('npx devhop <port>')}            ${pc.dim('(e.g. npx devhop 3000)')}`);
+      console.error(`  ${pc.cyan('npx devhop <host>:<port>')}     ${pc.dim('(e.g. npx devhop localhost:5173)')}`);
+      console.error(`  ${pc.cyan('npx devhop <url>')}             ${pc.dim('(e.g. npx devhop http://127.0.0.1:8080)')}\n`);
       process.exit(1);
     }
   }
@@ -79,6 +91,7 @@ export async function run(args = []) {
   // Create reverse proxy with header masquerade & response rewriting
   const { server, proxy } = createMasqueradeProxy({
     targetPort,
+    targetHost,
     getPublicUrl: () => publicUrl
   });
 
@@ -98,10 +111,9 @@ export async function run(args = []) {
     try { proxy.close(); } catch (_) {}
     console.log(`\n${pc.yellow('✔')} Tunnel disconnected. Cleaned up.\n`);
   };
-  process.on('SIGINT', () => { cleanup(); process.exit(0); });
-  process.on('SIGTERM', () => { cleanup(); process.exit(0); });
-  process.on('SIGHUP', () => { cleanup(); process.exit(0); });
-  process.on('SIGQUIT', () => { cleanup(); process.exit(0); });
+  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGQUIT']) {
+    process.on(sig, () => { cleanup(); process.exit(0); });
+  }
   process.on('uncaughtException', (err) => {
     cleanup();
     console.error(pc.red(`\nUncaught error: ${err.message}`));
@@ -113,7 +125,7 @@ export async function run(args = []) {
     binPath,
     onUrl: (url) => {
       publicUrl = url;
-      displayDashboard(url, targetPort, showQr);
+      displayDashboard(url, targetPort, targetHost, showQr);
     },
     onError: (err) => {
       console.error(pc.red(`\nFailed to start cloudflared: ${err.message}`));
@@ -132,12 +144,12 @@ export async function run(args = []) {
   });
 }
 
-function displayDashboard(url, targetPort, showQr) {
+function displayDashboard(url, targetPort, targetHost, showQr) {
   console.clear();
   console.log('');
   console.log(pc.bold(pc.bgCyan(pc.black(' 🦘 DEVHOP '))));
   console.log('');
-  console.log(`  ${pc.bold('Target:')}       ${pc.green(`http://localhost:${targetPort}`)}`);
+  console.log(`  ${pc.bold('Target:')}       ${pc.green(`http://${targetHost}:${targetPort}`)}`);
   console.log(`  ${pc.bold('Mobile URL:')}   ${pc.bold(pc.underline(pc.cyan(url)))}`);
   console.log('');
   console.log(`  ${pc.green('✔')} ${pc.dim('Host & Origin Masquerade active (Next.js / Vite HMR Safe)')}`);

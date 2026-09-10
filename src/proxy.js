@@ -17,8 +17,9 @@ export function createMasqueradeProxy({
   targetHost = '127.0.0.1',
   getPublicUrl = () => null
 }) {
+  const normalizedHost = targetHost === '0.0.0.0' ? '127.0.0.1' : targetHost;
   const proxy = httpProxy.createProxyServer({
-    target: `http://${targetHost}:${targetPort}`,
+    target: `http://${normalizedHost}:${targetPort}`,
     ws: true,
     changeOrigin: true,
     xfwd: false // Managed explicitly below to avoid leaking public tunnel host
@@ -83,16 +84,29 @@ export function createMasqueradeProxy({
         return cookie.replace(/;\s*domain=(\.?(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]))/gi, '');
       });
     }
+
+    // 4. Ensure streaming / SSE responses are not buffered by edge tunnels
+    if (proxyRes.headers['content-type']?.includes('text/event-stream')) {
+      proxyRes.headers['x-accel-buffering'] = 'no';
+    }
   });
 
-  // Handle proxy errors and ignore client connection drop (e.g. mobile screen lock)
+  // Handle proxy errors: return clean 502 on dev server restarts / crashes
   proxy.on('error', (err, req, res) => {
-    if (err.code === 'ECONNRESET' || err.code === 'EPIPE' || err.code === 'ECANCELED') {
-      return;
-    }
-    if (res && res.writeHead && !res.headersSent) {
-      res.writeHead(502, { 'Content-Type': 'text/plain' });
-      res.end(`devhop: Target server not responding on port ${targetPort}`);
+    if (res && typeof res.writeHead === 'function') {
+      if (!res.headersSent && res.writable) {
+        try {
+          res.writeHead(502, {
+            'Content-Type': 'text/plain',
+            'Retry-After': '1'
+          });
+          res.end(`devhop: Target server not responding on port ${targetPort}`);
+        } catch (_) {}
+      }
+    } else if (res && typeof res.destroy === 'function' && !res.destroyed) {
+      try {
+        res.destroy();
+      } catch (_) {}
     }
   });
 
@@ -102,6 +116,10 @@ export function createMasqueradeProxy({
 
   server.on('upgrade', (req, socket, head) => {
     proxy.ws(req, socket, head);
+  });
+
+  server.on('connection', (socket) => {
+    socket.setNoDelay(true);
   });
 
   // Ignore client socket errors on the HTTP server itself

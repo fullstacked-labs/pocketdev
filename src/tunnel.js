@@ -51,7 +51,7 @@ export async function ensureBinary(onProgress) {
 }
 
 export function startTunnel({ localPort, binPath, onUrl, onError, onClose }) {
-  const child = spawn(binPath, ['tunnel', '--url', `http://127.0.0.1:${localPort}`], {
+  const child = spawn(binPath, ['tunnel', '--no-autoupdate', '--url', `http://127.0.0.1:${localPort}`], {
     stdio: ['ignore', 'pipe', 'pipe']
   });
 

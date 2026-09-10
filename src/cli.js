@@ -4,7 +4,7 @@ import { createMasqueradeProxy } from './proxy.js';
 import { detectDevPorts, findFreePort, parseTarget } from './port.js';
 import { ensureBinary, startTunnel } from './tunnel.js';
 
-const VERSION = '0.1.1';
+const VERSION = '0.1.2';
 
 export function printHelp() {
   console.log(`
@@ -15,6 +15,7 @@ ${pc.bold('Usage:')}
   ${pc.green('npx devhop [target]')}         Expose dev server by port, host:port, or URL
   ${pc.green('npx devhop')}                  Auto-detect active dev server port
   ${pc.green('npx devhop <target> --no-qr')}  Expose without printing QR code
+  ${pc.green('npx devhop <target> --json')}   Output tunnel metadata as JSON (for agents)
   ${pc.green('npx devhop --help')}           Show this help message
   ${pc.green('npx devhop --version')}        Show version
 
@@ -44,10 +45,10 @@ export async function run(args = []) {
     return;
   }
 
-  const showQr = !args.includes('--no-qr');
+  const isJson = args.includes('--json');
+  const showQr = !args.includes('--no-qr') && !isJson;
   let targetPort = null;
   let targetHost = '127.0.0.1';
-
   const targetArg = args.find((a) => !a.startsWith('-') && parseTarget(a));
   if (targetArg) {
     const parsed = parseTarget(targetArg);
@@ -55,17 +56,19 @@ export async function run(args = []) {
     targetHost = parsed.host;
   } else {
     // Port auto-detection
-    console.log(`\n${pc.cyan('●')} Scanning for active dev servers...`);
+    if (!isJson) console.log(`\n${pc.cyan('●')} Scanning for active dev servers...`);
     const active = await detectDevPorts();
     if (active.length === 1) {
       targetPort = active[0];
-      console.log(`${pc.green('✔')} Auto-detected dev server running on port ${pc.bold(targetPort)}`);
+      if (!isJson) console.log(`${pc.green('✔')} Auto-detected dev server running on port ${pc.bold(targetPort)}`);
     } else if (active.length > 1) {
       targetPort = active[0];
-      console.log(
-        `${pc.yellow('!')} Found multiple active ports (${active.join(', ')}). Using ${pc.bold(targetPort)}.`
-      );
-      console.log(`${pc.dim('  Tip: Specify explicitly with: npx devhop <port>')}`);
+      if (!isJson) {
+        console.log(
+          `${pc.yellow('!')} Found multiple active ports (${active.join(', ')}). Using ${pc.bold(targetPort)}.`
+        );
+        console.log(`${pc.dim('  Tip: Specify explicitly with: npx devhop <port>')}`);
+      }
     } else {
       console.error(pc.red('\nNo active dev server detected on standard dev ports.'));
       console.error(`Please specify your dev server target explicitly:`);
@@ -76,13 +79,12 @@ export async function run(args = []) {
     }
   }
 
-  console.log(`\n${pc.cyan('●')} Initializing ${pc.bold('devhop')} for port ${pc.bold(targetPort)}...`);
+  if (!isJson) console.log(`\n${pc.cyan('●')} Initializing ${pc.bold('devhop')} for port ${pc.bold(targetPort)}...`);
 
   // Ensure cloudflared binary exists
   const binPath = await ensureBinary((msg) => {
-    console.log(`${pc.dim('  ' + msg)}`);
+    if (!isJson) console.log(`${pc.dim('  ' + msg)}`);
   });
-
   // Pick an ephemeral local proxy port
   const proxyPort = await findFreePort();
 
@@ -97,9 +99,10 @@ export async function run(args = []) {
 
   await new Promise((resolve) => server.listen(proxyPort, '127.0.0.1', resolve));
 
-  console.log(`${pc.dim('  Local masquerade proxy ready on port ' + proxyPort)}`);
-  console.log(`${pc.cyan('●')} Connecting secure tunnel to Cloudflare Edge...`);
-
+  if (!isJson) {
+    console.log(`${pc.dim('  Local masquerade proxy ready on port ' + proxyPort)}`);
+    console.log(`${pc.cyan('●')} Connecting secure tunnel to Cloudflare Edge...`);
+  }
   let cleanedUp = false;
   let tunnelHandle = null;
 
@@ -109,7 +112,7 @@ export async function run(args = []) {
     if (tunnelHandle) tunnelHandle.close();
     try { server.close(); } catch (_) {}
     try { proxy.close(); } catch (_) {}
-    console.log(`\n${pc.yellow('✔')} Tunnel disconnected. Cleaned up.\n`);
+    if (!isJson) console.log(`\n${pc.yellow('✔')} Tunnel disconnected. Cleaned up.\n`);
   };
   for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGQUIT']) {
     process.on(sig, () => { cleanup(); process.exit(0); });
@@ -125,7 +128,11 @@ export async function run(args = []) {
     binPath,
     onUrl: (url) => {
       publicUrl = url;
-      displayDashboard(url, targetPort, targetHost, showQr);
+      if (isJson) {
+        console.log(JSON.stringify({ url, target: `http://${targetHost}:${targetPort}`, port: targetPort, host: targetHost }));
+      } else {
+        displayDashboard(url, targetPort, targetHost, showQr);
+      }
     },
     onError: (err) => {
       console.error(pc.red(`\nFailed to start cloudflared: ${err.message}`));

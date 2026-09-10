@@ -19,7 +19,7 @@ npx devhop [port]
 
   ✔ Host & Origin Masquerade active (Next.js & Vite HMR Safe)
   ✔ Trusted HTTPS active (Microphone, Camera & WebCrypto Permitted)
-  ✔ Location & Cookie domain rewrites active
+  ✔ Location, Cookie & Server Action redirect rewrites active
   ✔ Zero configuration, no accounts or root certs required
 
   Scan with your iPhone or Android camera:
@@ -32,7 +32,7 @@ npx devhop [port]
 
 ## The Problem: Mobile Web Dev is Broken in 2026
 
-When you try testing your Next.js, Vite, Remix, or Astro app on a physical iPhone or Android device, you hit two brick walls:
+When you try testing your Next.js, Vite, Remix, or Astro app on a physical iPhone or Android device, you hit three brick walls:
 
 ### 1. The HMR Wall (Cross-Origin Blocking)
 Modern frameworks have hardened their dev servers against Cross-Site WebSocket hijacking:
@@ -41,38 +41,60 @@ Modern frameworks have hardened their dev servers against Cross-Site WebSocket h
   Blocked cross-origin request to Next.js dev resource /_next/static/webpack/...
   To allow this host in development, add it to "allowedDevOrigins" in next.config.js
   ```
-* **Vite & Webpack**:
+* **Next.js Server Actions**: Rejects POST actions because the incoming origin does not match the forwarded host:
   ```text
-  [vite] connecting... failed to connect to websocket.
-  Invalid Host header.
+  Error: Invalid Server Actions request.
   ```
+* **Vite 6 & Webpack**: Rejects external Host headers to prevent DNS rebinding:
+  ```text
+  Blocked request. This host is not allowed.
+  ```
+
 Editing `allowedDevOrigins` or hardcoding your LAN IP in config files breaks git branches, CI, and coffee shop Wi-Fi changes.
 
 ### 2. The Secure Context Wall (`isSecureContext === false`)
 Mobile Safari and Android Chrome hard-disable modern Web APIs over plain LAN HTTP (`http://192.168.x.x:3000`):
 * `navigator.mediaDevices.getUserMedia` is `undefined` (Microphone and Camera tests fail immediately).
-* `NotAllowedError: The request is not allowed by the user agent in the current context`.
-* `crypto.subtle` and WebShare are disabled.
+* `crypto.subtle` (WebCrypto) and Web Authentication / Passkeys are disabled.
+* Async Clipboard API and Geolocation are blocked.
+
+### 3. The Guest Wi-Fi & Client Isolation Wall
+In offices, coffee shops, and conferences, Wi-Fi routers enforce Client Isolation, preventing your phone from reaching your laptop's LAN IP address directly.
 
 ---
 
-## Why Existing Tools Don't Cut It
+## Comparison: Why devhop Beats the Alternatives
 
-| Tool | Trusted HTTPS? | Fixes Next.js / Vite HMR? | Account / Signup? | Setup Friction |
-|---|---|---|---|---|
-| **devhop** | **Yes** (Cloudflare Edge) | **Yes** (Header Masquerade) | **Zero (Anonymous)** | `npx devhop 3000` |
-| **ngrok** | Yes | **No** (passes external Host; HMR dies) | Yes (Auth token required) | High |
-| **cloudflared** | Yes | **No** (passes `*.trycloudflare.com` Host) | No | High (CLI install) |
-| **Tailscale Serve** | Yes | **No** (passes `*.ts.net` Host) | Yes | High (requires tailnet on phone) |
-| **mkcert** | Yes | **No** (still cross-origin IP) | No | Painful (iOS Root CA profile dance) |
+| Feature | **devhop** | **ngrok** | **unjs/untun** | **LocalCan** | **mkcert** |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Setup Command** | `npx devhop` | CLI install + login | `npx untun` | $57 Mac App | Brew install |
+| **Account / Signups** | **None** | Required | None | License key | None |
+| **Trusted HTTPS (Green Padlock)** | **Yes** | Yes | Yes | Yes (local) | Manual iOS CA Profile |
+| **Next.js 14–16 HMR & Fast Refresh** | **Yes** (In-process proxy) | ❌ Blocks cross-origin | ❌ Blocks cross-origin | ❌ Blocks cross-origin | ⚠️ LAN IP mismatch |
+| **Next.js Server Actions CSRF Safe** | **Yes** (Origin aligned) | ❌ 500 CSRF abort | ❌ 500 CSRF abort | ❌ 500 CSRF abort | ⚠️ Protocol mismatch |
+| **Vite 6 `allowedHosts` Compatible** | **Yes** (Host masquerade) | ❌ 403 Forbidden | ❌ 403 Forbidden | ❌ 403 Forbidden | ⚠️ Host mismatch |
+| **Real-time SSE / Token Streaming** | **Yes** (Unbuffered) | Yes | Yes | Yes | Yes |
+| **Terminal QR Code** | **Yes** (Compact Unicode) | ❌ URL only | ❌ URL only | ❌ Desktop UI only | ❌ None |
+| **Free / Open Source** | **MIT (100% Free)** | $8+/mo after 1GB | MIT | $57 paid | MIT |
 
-Existing tunneling tools only solve the *network pipe*. They don't solve the *framework security guard*.
+---
+
+## Secure Context: Unlocked Mobile Web APIs
+
+Because `devhop` terminates trusted TLS at Cloudflare's Edge, mobile Safari and Chrome grant your physical device full **Secure Context** permissions:
+
+| Web API | `http://192.168.x.x` (LAN) | `npx devhop` | Use Case |
+| :--- | :---: | :---: | :--- |
+| **`navigator.mediaDevices.getUserMedia`** | ❌ `undefined` | ✅ **Permitted** | Speech-to-Text dictation, voice notes, camera scanner |
+| **`crypto.subtle` (WebCrypto)** | ❌ Blocked | ✅ **Permitted** | JWT signing, encryption, client-side auth tokens |
+| **Web Authentication (Passkeys)** | ❌ Blocked | ✅ **Permitted** | Biometric FaceID / TouchID login flows |
+| **Async Clipboard (`navigator.clipboard`)** | ❌ Blocked | ✅ **Permitted** | 1-click copy buttons and rich clipboard reads |
+| **Geolocation API** | ❌ Blocked | ✅ **Permitted** | GPS location testing on physical mobile hardware |
+| **Progressive Web App (PWA) Install** | ❌ Blocked | ✅ **Permitted** | Testing "Add to Home Screen" on iOS Safari |
 
 ---
 
 ## How devhop Works
-
-devhop combines two things in one command:
 
 ```
 ┌─────────────────┐       HTTPS       ┌─────────────────────────────┐
@@ -91,8 +113,11 @@ devhop combines two things in one command:
                                       └─────────────────────────────┘
 ```
 
-1. **Header Masquerading**: Intercepts incoming requests and rewrites `Host`, `Origin`, and `Referer` to `localhost:<port>`. Next.js and Vite believe the mobile phone is a local browser tab on your laptop, bypassing all cross-origin security guards.
-2. **Ephemeral Cloudflare Quick Tunnel**: Creates an instant, trusted HTTPS tunnel without needing a Cloudflare account, credit card, or custom domain. iOS Safari sees a trusted Let's Encrypt certificate and grants camera/mic permissions without warnings.
+1. **Header Masquerading**: Intercepts incoming requests and rewrites `Host`, `Origin`, and `Referer` to `localhost:<port>`, while normalizing `sec-fetch-site` to `same-origin`. Frameworks perceive the mobile connection as local loopback traffic, bypassing cross-origin blocks.
+2. **Redirect & Server Action Rewrites**: Automatically rewrites `Location` and Next.js `x-action-redirect` response headers to ensure OAuth logins, form submissions, and Server Action redirects remain on the public mobile URL.
+3. **Cookie Domain Stripping**: Automatically strips `Domain=localhost` and `Domain=[::1]` from `Set-Cookie` response headers so mobile Safari and Chrome properly store session cookies.
+4. **Dev Server Reboot Resilience**: Catches `ECONNREFUSED` during Vite or Next.js rebuilds and returns a clean `502 Bad Gateway` with `Retry-After: 1` rather than crashing the process or hanging client sockets.
+5. **Streaming & SSE**: Disables buffering on Server-Sent Events (`X-Accel-Buffering: no` and TCP `socket.setNoDelay(true)`) for smooth real-time AI token streaming.
 
 ---
 
@@ -101,45 +126,44 @@ devhop combines two things in one command:
 Run directly via `npx`:
 
 ```bash
-# Auto-detects active dev server (Next.js, Vite, Astro, etc.)
+# Auto-detects active dev server (Next.js, Vite, Astro, Nuxt, etc.)
 npx devhop
 
 # Specify port explicitly
 npx devhop 3000
 
-# Or pass host:port or full URL
+# Tolerant target syntax (paste directly from terminal output)
 npx devhop localhost:5173
 npx devhop 127.0.0.1:8080
 npx devhop 0.0.0.0:4321
 npx devhop http://localhost:5173
-
-# Or install globally
-npm install -g devhop
-devhop 3000
 ```
 
-### Options
+### CLI Options
 
 ```text
 npx devhop                   Auto-detect active dev server port
 npx devhop [target]          Expose port, host:port, or URL with QR code
 npx devhop [target] --no-qr  Expose target without printing QR code
+npx devhop [target] --json   Output tunnel JSON (for AI coding agents & scripts)
 npx devhop --help            Show help message
 npx devhop --version         Show version
 ```
 
 ---
 
-## Features
+## AI Agent Integration
 
-- ⚡ **Zero Config & Zero Signup**: No accounts, no API tokens, no credit cards.
-- 🔄 **Working HMR / Fast Refresh**: Save code on your laptop and watch your mobile screen update instantly.
-- 🎙️ **Full Web APIs Enabled**: Test Speech-to-Text (`getUserMedia`), camera capture, WebCrypto, and WebShare.
-- 📱 **Instant QR Code**: Point your phone camera at the terminal to open the live URL.
-- 🧹 **Zero Leftover Daemons**: Clean teardown on `Ctrl+C`. No orphaned processes or persistent background services.
-- 💻 **Cross-Platform**: Works out of the box on macOS, Linux, and Windows.
+`devhop` is built for modern AI coding agents (Claude Code, Cursor, Windsurf, OMP):
+* **`skill.md`**: Implements the open Agent Skills specification so agents understand when and how to launch mobile tunnels.
+* **`llms.txt`**: Curated machine-readable overview for LLM context retrieval.
+* **`--json` Flag**: Run `npx devhop 3000 --json` to receive structured output:
+  ```json
+  {"url":"https://example.trycloudflare.com","target":"http://127.0.0.1:3000","port":3000,"host":"127.0.0.1"}
+  ```
 
 ---
 
 ## License
+
 MIT © [Noor Latif](https://github.com/noor-latif) · [Fullstacked](https://fullstacked.se)

@@ -295,3 +295,88 @@ test('Proxy safely streams chunked SSE response without buffering', async (t) =>
   const fullBody = chunks.join('');
   assert.ok(fullBody.includes('part1') && fullBody.includes('part2'), 'Full SSE stream payload should be received');
 });
+
+test('Proxy rewrites Next.js x-action-redirect response header to public tunnel URL', async (t) => {
+  const backendPort = await findFreePort();
+  const proxyPort = await findFreePort();
+  const publicUrl = 'https://shiny-tunnel-789.trycloudflare.com';
+
+  const backend = http.createServer((req, res) => {
+    res.writeHead(200, {
+      'x-action-redirect': `http://localhost:${backendPort}/dashboard;push`
+    });
+    res.end();
+  });
+
+  await new Promise((r) => backend.listen(backendPort, '127.0.0.1', r));
+
+  const { server: proxyServer } = createMasqueradeProxy({
+    targetPort: backendPort,
+    getPublicUrl: () => publicUrl
+  });
+
+  await new Promise((r) => proxyServer.listen(proxyPort, '127.0.0.1', r));
+
+  t.after(() => {
+    backend.close();
+    proxyServer.close();
+  });
+
+  const res = await fetch(`http://127.0.0.1:${proxyPort}/action`, {
+    method: 'POST'
+  });
+
+  assert.strictEqual(
+    res.headers.get('x-action-redirect'),
+    `${publicUrl}/dashboard;push`,
+    'x-action-redirect must be rewritten to public tunnel URL'
+  );
+});
+
+test('Proxy injects Connection: close on chunked Transfer-Encoding requests', async (t) => {
+  const backendPort = await findFreePort();
+  const proxyPort = await findFreePort();
+  let backendConnectionHeader = null;
+
+  const backend = http.createServer((req, res) => {
+    backendConnectionHeader = req.headers.connection;
+    res.writeHead(200);
+    res.end('ok');
+  });
+
+  await new Promise((r) => backend.listen(backendPort, '127.0.0.1', r));
+
+  const { server: proxyServer } = createMasqueradeProxy({
+    targetPort: backendPort
+  });
+
+  await new Promise((r) => proxyServer.listen(proxyPort, '127.0.0.1', r));
+
+  t.after(() => {
+    backend.close();
+    proxyServer.close();
+  });
+
+  // Send a chunked POST request using native http.request
+  await new Promise((resolve, reject) => {
+    const req = http.request(
+      {
+        hostname: '127.0.0.1',
+        port: proxyPort,
+        path: '/upload',
+        method: 'POST',
+        headers: {
+          'transfer-encoding': 'chunked'
+        }
+      },
+      (res) => {
+        res.resume();
+        res.on('end', resolve);
+      }
+    );
+    req.on('error', reject);
+    req.write('hello chunk');
+    req.end();
+  });
+  assert.strictEqual(backendConnectionHeader, 'close', 'Should set Connection: close for chunked transfers');
+});

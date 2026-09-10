@@ -48,6 +48,11 @@ export function createMasqueradeProxy({
     if (req.headers['sec-fetch-site']) {
       proxyReq.setHeader('sec-fetch-site', 'same-origin');
     }
+
+    // 5. Harden against request smuggling on chunked transfers (GHSA-ggv3-7p47-pfv8)
+    if (req.headers['transfer-encoding']?.includes('chunked')) {
+      proxyReq.setHeader('Connection', 'close');
+    }
   };
 
   proxy.on('proxyReq', rewriteRequestHeaders);
@@ -61,6 +66,14 @@ export function createMasqueradeProxy({
     // Matches both http:// and https:// across localhost, 127.0.0.1, 0.0.0.0, and [::1]
     if (proxyRes.headers.location && publicUrl) {
       proxyRes.headers.location = proxyRes.headers.location.replace(
+        new RegExp(`^https?://(\\.?(localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0|\\[::1\\]))(:${targetPort})?(?=/|$)`, 'i'),
+        publicUrl
+      );
+    }
+
+    // 1b. Rewrite Next.js Server Action redirect header (x-action-redirect)
+    if (proxyRes.headers['x-action-redirect'] && publicUrl) {
+      proxyRes.headers['x-action-redirect'] = proxyRes.headers['x-action-redirect'].replace(
         new RegExp(`^https?://(\\.?(localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0|\\[::1\\]))(:${targetPort})?(?=/|$)`, 'i'),
         publicUrl
       );

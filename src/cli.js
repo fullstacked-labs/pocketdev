@@ -98,11 +98,16 @@ export async function run(args = []) {
     try { proxy.close(); } catch (_) {}
     console.log(`\n${pc.yellow('✔')} Tunnel disconnected. Cleaned up.\n`);
   };
-
   process.on('SIGINT', () => { cleanup(); process.exit(0); });
   process.on('SIGTERM', () => { cleanup(); process.exit(0); });
+  process.on('SIGHUP', () => { cleanup(); process.exit(0); });
+  process.on('SIGQUIT', () => { cleanup(); process.exit(0); });
+  process.on('uncaughtException', (err) => {
+    cleanup();
+    console.error(pc.red(`\nUncaught error: ${err.message}`));
+    process.exit(1);
+  });
   process.on('exit', cleanup);
-
   tunnelHandle = startTunnel({
     localPort: proxyPort,
     binPath,
@@ -116,10 +121,12 @@ export async function run(args = []) {
       process.exit(1);
     },
     onClose: (code) => {
-      if (!cleanedUp && code !== 0) {
-        console.error(pc.red(`\ncloudflared exited with code ${code}`));
+      if (!cleanedUp) {
+        if (code !== 0) {
+          console.error(pc.red(`\ncloudflared exited with code ${code}`));
+        }
         cleanup();
-        process.exit(code || 1);
+        process.exit(code || 0);
       }
     }
   });

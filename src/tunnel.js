@@ -17,8 +17,17 @@ export function getBinPath() {
 
 export async function ensureBinary(onProgress) {
   const binPath = getBinPath();
+
+  // If binary exists and is valid (> 1MB), reuse it
   if (fs.existsSync(binPath)) {
-    return binPath;
+    try {
+      const stat = fs.statSync(binPath);
+      if (stat.size > 1024 * 1024) {
+        return binPath;
+      }
+      // If corrupted / 0-byte, remove and redownload
+      fs.unlinkSync(binPath);
+    } catch (_) {}
   }
 
   const dir = path.dirname(binPath);
@@ -26,9 +35,19 @@ export async function ensureBinary(onProgress) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
+  // Atomic download to .tmp file to prevent corrupt cache on interrupt
+  const tempPath = `${binPath}.tmp-${Date.now()}`;
   if (onProgress) onProgress('Downloading cloudflared binary (one-time setup)...');
-  await install(binPath);
-  return binPath;
+
+  try {
+    await install(tempPath);
+    fs.renameSync(tempPath, binPath);
+    try { fs.chmodSync(binPath, '755'); } catch (_) {}
+    return binPath;
+  } catch (err) {
+    try { fs.unlinkSync(tempPath); } catch (_) {}
+    throw new Error(`Failed to install cloudflared: ${err.message}`);
+  }
 }
 
 export function startTunnel({ localPort, binPath, onUrl, onError, onClose }) {
@@ -56,7 +75,15 @@ export function startTunnel({ localPort, binPath, onUrl, onError, onClose }) {
   return {
     child,
     close: () => {
-      try { child.kill('SIGTERM'); } catch (_) {}
+      try {
+        child.kill('SIGTERM');
+        // SIGKILL fallback after 500ms to guarantee zero zombie processes
+        setTimeout(() => {
+          try {
+            if (!child.killed) child.kill('SIGKILL');
+          } catch (_) {}
+        }, 500);
+      } catch (_) {}
     }
   };
 }

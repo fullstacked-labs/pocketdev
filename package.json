@@ -1,0 +1,59 @@
+{
+  "name": "pocketdev",
+  "version": "0.1.0",
+  "description": "Instant zero-config HTTPS tunnel for testing local web apps on mobile devices with working HMR and microphone/camera permissions.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "pocketdev": "./bin/pocketdev.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE",
+    "skill.md",
+    "llms.txt"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node ./bin/pocketdev.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noor-latif/pocketdev.git"
+  },
+  "keywords": [
+    "tunnel",
+    "mobile",
+    "nextjs",
+    "vite",
+    "hmr",
+    "fast-refresh",
+    "getusermedia",
+    "secure-context",
+    "ios",
+    "safari",
+    "trycloudflare",
+    "developer-tools",
+    "dev-tools"
+  ],
+  "author": "Noor Latif",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/noor-latif/pocketdev/issues"
+  },
+  "homepage": "https://github.com/noor-latif/pocketdev#readme",
+  "dependencies": {
+    "cloudflared": "^0.7.3",
+    "http-proxy": "^1.18.1",
+    "picocolors": "^1.1.1",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

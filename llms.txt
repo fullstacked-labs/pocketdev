@@ -1,0 +1,14 @@
+# pocketdev
+> Zero-config mobile dev proxy for testing local web apps on physical phones with working HMR and microphone/camera permissions.
+
+- CLI: `npx pocketdev <port>`
+- Repo: https://github.com/noor-latif/pocketdev
+- npm: https://www.npmjs.com/package/pocketdev
+- Docs: https://github.com/noor-latif/pocketdev#readme
+
+## Key Capabilities
+- Solves Next.js 14-16 `allowedDevOrigins` cross-origin HMR WebSocket blocking.
+- Solves iOS Safari / Android Chrome HTTP Secure Context blocks (`getUserMedia`, camera, crypto).
+- Masquerades Host, Origin, and Referer headers in-process to `localhost:<port>`.
+- Generates ASCII terminal QR code for instant phone camera scanning.
+- Zero signup, zero accounts, zero system daemons.

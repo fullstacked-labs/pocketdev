@@ -8,7 +8,7 @@
     ".": "./src/index.js"
   },
   "bin": {
-    "pocketdev": "./bin/pocketdev.js"
+    "pocketdev": "bin/pocketdev.js"
   },
   "files": [
     "bin",

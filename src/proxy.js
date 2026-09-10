@@ -23,14 +23,22 @@ export function createMasqueradeProxy({
     xfwd: true
   });
 
-  const rewriteRequestHeaders = (proxyReq) => {
+  const rewriteRequestHeaders = (proxyReq, req) => {
     proxyReq.setHeader('Host', `localhost:${targetPort}`);
-    proxyReq.setHeader('Origin', `http://localhost:${targetPort}`);
-    proxyReq.setHeader('Referer', `http://localhost:${targetPort}/`);
+    if (req.headers.origin) {
+      proxyReq.setHeader('Origin', `https://localhost:${targetPort}`);
+    } else {
+      proxyReq.removeHeader('Origin');
+    }
+    if (req.headers.referer) {
+      proxyReq.setHeader('Referer', `https://localhost:${targetPort}/`);
+    }
+    if (req.headers['sec-fetch-site']) {
+      proxyReq.setHeader('sec-fetch-site', 'same-origin');
+    }
     proxyReq.setHeader('x-forwarded-proto', 'https');
     proxyReq.setHeader('x-forwarded-ssl', 'on');
   };
-
   proxy.on('proxyReq', rewriteRequestHeaders);
   proxy.on('proxyReqWs', rewriteRequestHeaders);
 

@@ -43,8 +43,8 @@ test('Proxy rewrites request headers (Host, Origin, Referer, x-forwarded-proto)'
 
   assert.ok(capturedHeaders, 'Backend should have received request');
   assert.strictEqual(capturedHeaders.host, `localhost:${backendPort}`, 'Host must be masqueraded to localhost:<port>');
-  assert.strictEqual(capturedHeaders.origin, `http://localhost:${backendPort}`, 'Origin must be masqueraded to http://localhost:<port>');
-  assert.strictEqual(capturedHeaders.referer, `http://localhost:${backendPort}/`, 'Referer must be masqueraded to http://localhost:<port>/');
+  assert.strictEqual(capturedHeaders.origin, `https://localhost:${backendPort}`, 'Origin must be masqueraded to https://localhost:<port>');
+  assert.strictEqual(capturedHeaders.referer, `https://localhost:${backendPort}/`, 'Referer must be masqueraded to https://localhost:<port>/');
   assert.strictEqual(capturedHeaders['x-forwarded-proto'], 'https', 'x-forwarded-proto must be https');
   assert.strictEqual(capturedHeaders['x-forwarded-ssl'], 'on', 'x-forwarded-ssl must be on');
 });

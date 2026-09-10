@@ -27,7 +27,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/noor-latif/pocketdev.git"
+    "url": "git+https://github.com/fullstacked-labs/pocketdev.git"
   },
   "keywords": [
     "tunnel",
@@ -47,9 +47,9 @@
   "author": "Noor Latif",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/noor-latif/pocketdev/issues"
+    "url": "https://github.com/fullstacked-labs/pocketdev/issues"
   },
-  "homepage": "https://github.com/noor-latif/pocketdev#readme",
+  "homepage": "https://github.com/fullstacked-labs/pocketdev#readme",
   "dependencies": {
     "cloudflared": "^0.7.3",
     "http-proxy": "^1.18.1",

@@ -1,23 +1,25 @@
-# 📱 pocketdev
+# 🦘 devhop
 
-[![npm version](https://img.shields.io/npm/v/@fullstacked-labs/pocketdev.svg)](https://www.npmjs.com/package/@fullstacked-labs/pocketdev)
+[![npm version](https://img.shields.io/npm/v/devhop.svg)](https://www.npmjs.com/package/devhop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Built for AI Agents](https://img.shields.io/badge/AI%20Agent-Skill%20Ready-purple.svg)](./skill.md)
 
-> **Test local web apps on your phone in 3 seconds. Instant trusted HTTPS, working Hot Module Reloading (HMR), and mobile camera/microphone permissions with zero configuration.**
+> **Hop your local web dev server onto your phone in seconds. Instant trusted HTTPS, working Hot Module Reloading (HMR), and mobile camera/microphone permissions with zero configuration.**
+
 ```bash
-npx @fullstacked-labs/pocketdev 3000
+npx devhop [port]
 ```
 
 ```text
- 📱 POCKETDEV 
+ 🦘 DEVHOP 
 
   Target:       http://localhost:3000
   Mobile URL:   https://breeze-sunset-vintage-glade.trycloudflare.com
 
   ✔ Host & Origin Masquerade active (Next.js & Vite HMR Safe)
   ✔ Trusted HTTPS active (Microphone, Camera & WebCrypto Permitted)
+  ✔ Location & Cookie domain rewrites active
   ✔ Zero configuration, no accounts or root certs required
 
   Scan with your iPhone or Android camera:
@@ -58,7 +60,7 @@ Mobile Safari and Android Chrome hard-disable modern Web APIs over plain LAN HTT
 
 | Tool | Trusted HTTPS? | Fixes Next.js / Vite HMR? | Account / Signup? | Setup Friction |
 |---|---|---|---|---|
-| **PocketDev** | **Yes** (Cloudflare Edge) | **Yes** (Header Masquerade) | **Zero (Anonymous)** | `npx pocketdev 3000` |
+| **devhop** | **Yes** (Cloudflare Edge) | **Yes** (Header Masquerade) | **Zero (Anonymous)** | `npx devhop 3000` |
 | **ngrok** | Yes | **No** (passes external Host; HMR dies) | Yes (Auth token required) | High |
 | **cloudflared** | Yes | **No** (passes `*.trycloudflare.com` Host) | No | High (CLI install) |
 | **Tailscale Serve** | Yes | **No** (passes `*.ts.net` Host) | Yes | High (requires tailnet on phone) |
@@ -68,9 +70,9 @@ Existing tunneling tools only solve the *network pipe*. They don't solve the *fr
 
 ---
 
-## How PocketDev Works
+## How devhop Works
 
-PocketDev combines two things in one command:
+devhop combines two things in one command:
 
 ```
 ┌─────────────────┐       HTTPS       ┌─────────────────────────────┐
@@ -79,7 +81,7 @@ PocketDev combines two things in one command:
                                                      │
                                                      ▼ HTTP
                                       ┌─────────────────────────────┐
-                                      │    PocketDev Micro-Proxy    │
+                                      │      devhop Micro-Proxy     │
                                       │ (Rewrites Host -> localhost)│
                                       └─────────────────────────────┘
                                                      │
@@ -99,21 +101,25 @@ PocketDev combines two things in one command:
 Run directly via `npx`:
 
 ```bash
-# Expose your dev server (e.g. Next.js on 3000, Vite on 5173)
-npx @fullstacked-labs/pocketdev 3000
+# Auto-detects active dev server (Next.js, Vite, Astro, etc.)
+npx devhop
+
+# Or specify your port explicitly
+npx devhop 3000
 
 # Or install globally
-npm install -g @fullstacked-labs/pocketdev
-pocketdev 3000
+npm install -g devhop
+devhop 3000
 ```
 
 ### Options
 
 ```text
-npx @fullstacked-labs/pocketdev <port>          Expose port with terminal QR code
-npx @fullstacked-labs/pocketdev <port> --no-qr  Expose port without printing QR code
-npx @fullstacked-labs/pocketdev --help          Show help message
-npx @fullstacked-labs/pocketdev --version       Show version
+npx devhop                 Auto-detect active dev server port
+npx devhop <port>          Expose port with terminal QR code
+npx devhop <port> --no-qr  Expose port without printing QR code
+npx devhop --help          Show help message
+npx devhop --version       Show version
 ```
 
 ---

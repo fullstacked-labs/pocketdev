@@ -9,8 +9,8 @@ export function getBinPath() {
   const binName = isWin ? 'cloudflared.exe' : 'cloudflared';
 
   const cacheDir = process.env.XDG_CACHE_HOME
-    ? path.join(process.env.XDG_CACHE_HOME, 'pocketdev', 'bin')
-    : path.join(os.homedir(), '.cache', 'pocketdev', 'bin');
+    ? path.join(process.env.XDG_CACHE_HOME, 'devhop', 'bin')
+    : path.join(os.homedir(), '.cache', 'devhop', 'bin');
 
   return path.join(cacheDir, binName);
 }

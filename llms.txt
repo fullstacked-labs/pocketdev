@@ -1,10 +1,10 @@
-# pocketdev
+# devhop
 > Zero-config mobile dev proxy for testing local web apps on physical phones with working HMR and microphone/camera permissions.
 
-- CLI: `npx @fullstacked-labs/pocketdev <port>`
-- Repo: https://github.com/fullstacked-labs/pocketdev
-- npm: https://www.npmjs.com/package/@fullstacked-labs/pocketdev
-- Docs: https://github.com/fullstacked-labs/pocketdev#readme
+- CLI: `npx devhop [port]`
+- Repo: https://github.com/fullstacked-labs/devhop
+- npm: https://www.npmjs.com/package/devhop
+- Docs: https://github.com/fullstacked-labs/devhop#readme
 
 ## Key Capabilities
 - Solves Next.js 14-16 `allowedDevOrigins` cross-origin HMR WebSocket blocking.

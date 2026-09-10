@@ -19,7 +19,7 @@ test('Proxy rewrites request headers (Host, Origin, Referer, x-forwarded-proto, 
 
   await new Promise((r) => backend.listen(backendPort, '127.0.0.1', r));
 
-  // 2. PocketDev masquerade proxy
+  // 2. DevHop masquerade proxy
   const { server: proxyServer } = createMasqueradeProxy({
     targetPort: backendPort,
     getPublicUrl: () => 'https://mock.trycloudflare.com'
@@ -70,7 +70,7 @@ test('Proxy rewrites both http:// and https:// Location headers in redirects', a
 
   await new Promise((r) => backend.listen(backendPort, '127.0.0.1', r));
 
-  // 2. PocketDev masquerade proxy
+  // 2. DevHop masquerade proxy
   const { server: proxyServer } = createMasqueradeProxy({
     targetPort: backendPort,
     getPublicUrl: () => publicTunnelUrl
@@ -114,7 +114,7 @@ test('Proxy rewrites Access-Control-Allow-Origin response header to public tunne
     });
     res.end('ok');
   });
-
+  // 2. DevHop masquerade proxy
   await new Promise((r) => backend.listen(backendPort, '127.0.0.1', r));
 
   const { server: proxyServer } = createMasqueradeProxy({

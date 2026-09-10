@@ -1,17 +1,17 @@
 {
-  "name": "@fullstacked-labs/pocketdev",
-  "version": "0.1.1",
+  "name": "devhop",
+  "version": "0.1.0",
   "publishConfig": {
     "access": "public"
   },
-  "description": "Instant zero-config HTTPS tunnel for testing local web apps on mobile devices with working HMR and microphone/camera permissions.",
+  "description": "Hop local web dev servers onto mobile devices in seconds with working HTTPS, HMR, and microphone/camera permissions.",
   "type": "module",
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js"
   },
   "bin": {
-    "pocketdev": "bin/pocketdev.js"
+    "devhop": "bin/devhop.js"
   },
   "files": [
     "bin",
@@ -26,13 +26,14 @@
   },
   "scripts": {
     "test": "node --test",
-    "start": "node ./bin/pocketdev.js"
+    "start": "node ./bin/devhop.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fullstacked-labs/pocketdev.git"
+    "url": "git+https://github.com/fullstacked-labs/devhop.git"
   },
   "keywords": [
+    "devhop",
     "tunnel",
     "mobile",
     "nextjs",
@@ -50,9 +51,9 @@
   "author": "Noor Latif",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/fullstacked-labs/pocketdev/issues"
+    "url": "https://github.com/fullstacked-labs/devhop/issues"
   },
-  "homepage": "https://github.com/fullstacked-labs/pocketdev#readme",
+  "homepage": "https://github.com/fullstacked-labs/devhop#readme",
   "dependencies": {
     "cloudflared": "^0.7.3",
     "http-proxy": "^1.18.1",

@@ -92,7 +92,7 @@ export function createMasqueradeProxy({
     }
     if (res && res.writeHead && !res.headersSent) {
       res.writeHead(502, { 'Content-Type': 'text/plain' });
-      res.end(`pocketdev: Target server not responding on port ${targetPort}`);
+      res.end(`devhop: Target server not responding on port ${targetPort}`);
     }
   });
 

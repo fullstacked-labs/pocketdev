@@ -8,15 +8,15 @@ const VERSION = '0.1.0';
 
 export function printHelp() {
   console.log(`
-${pc.bold(pc.cyan('📱 pocketdev'))} ${pc.dim(`v${VERSION}`)}
-${pc.dim('Test local web apps on physical mobile devices with zero config.')}
+${pc.bold(pc.cyan('🦘 devhop'))} ${pc.dim(`v${VERSION}`)}
+${pc.dim('Hop local web dev servers onto mobile devices with zero config.')}
 
 ${pc.bold('Usage:')}
-  ${pc.green('npx pocketdev <port>')}       Expose dev server (e.g. npx pocketdev 3000)
-  ${pc.green('npx pocketdev')}              Auto-detect active dev server port
-  ${pc.green('npx pocketdev <port> --no-qr')} Expose without printing QR code
-  ${pc.green('npx pocketdev --help')}        Show this help message
-  ${pc.green('npx pocketdev --version')}     Show version
+  ${pc.green('npx devhop <port>')}         Expose dev server (e.g. npx devhop 3000)
+  ${pc.green('npx devhop')}                Auto-detect active dev server port
+  ${pc.green('npx devhop <port> --no-qr')} Expose without printing QR code
+  ${pc.green('npx devhop --help')}          Show this help message
+  ${pc.green('npx devhop --version')}       Show version
 
 ${pc.bold('Features:')}
   ${pc.green('✔')} ${pc.bold('Fast Refresh & HMR')}     Rewrites headers so Next.js & Vite never block cross-origin websockets
@@ -56,15 +56,15 @@ export async function run(args = []) {
       console.log(
         `${pc.yellow('!')} Found multiple active ports (${active.join(', ')}). Using ${pc.bold(targetPort)}.`
       );
-      console.log(`${pc.dim('  Tip: Specify explicitly with: npx pocketdev <port>')}`);
+      console.log(`${pc.dim('  Tip: Specify explicitly with: npx devhop <port>')}`);
     } else {
       console.error(pc.red('\nNo active dev server detected on standard ports (3000, 5173, 8080, 4321, 30178).'));
-      console.error(`Please specify your dev server port explicitly:\n  ${pc.cyan('npx pocketdev <port>')}\n`);
+      console.error(`Please specify your dev server port explicitly:\n  ${pc.cyan('npx devhop <port>')}\n`);
       process.exit(1);
     }
   }
 
-  console.log(`\n${pc.cyan('●')} Initializing ${pc.bold('pocketdev')} for port ${pc.bold(targetPort)}...`);
+  console.log(`\n${pc.cyan('●')} Initializing ${pc.bold('devhop')} for port ${pc.bold(targetPort)}...`);
 
   // Ensure cloudflared binary exists
   const binPath = await ensureBinary((msg) => {
@@ -135,7 +135,7 @@ export async function run(args = []) {
 function displayDashboard(url, targetPort, showQr) {
   console.clear();
   console.log('');
-  console.log(pc.bold(pc.bgCyan(pc.black(' 📱 POCKETDEV '))));
+  console.log(pc.bold(pc.bgCyan(pc.black(' 🦘 DEVHOP '))));
   console.log('');
   console.log(`  ${pc.bold('Target:')}       ${pc.green(`http://localhost:${targetPort}`)}`);
   console.log(`  ${pc.bold('Mobile URL:')}   ${pc.bold(pc.underline(pc.cyan(url)))}`);

@@ -1,13 +1,13 @@
 # 📱 pocketdev
 
-[![npm version](https://img.shields.io/npm/v/pocketdev.svg)](https://www.npmjs.com/package/pocketdev)
+[![npm version](https://img.shields.io/npm/v/@fullstacked-labs/pocketdev.svg)](https://www.npmjs.com/package/@fullstacked-labs/pocketdev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Built for AI Agents](https://img.shields.io/badge/AI%20Agent-Skill%20Ready-purple.svg)](./skill.md)
 
 > **Test local web apps on your phone in 3 seconds. Instant trusted HTTPS, working Hot Module Reloading (HMR), and mobile camera/microphone permissions with zero configuration.**
 ```bash
-npx pocketdev 3000
+npx @fullstacked-labs/pocketdev 3000
 ```
 
 ```text
@@ -100,20 +100,20 @@ Run directly via `npx`:
 
 ```bash
 # Expose your dev server (e.g. Next.js on 3000, Vite on 5173)
-npx pocketdev 3000
+npx @fullstacked-labs/pocketdev 3000
 
 # Or install globally
-npm install -g pocketdev
+npm install -g @fullstacked-labs/pocketdev
 pocketdev 3000
 ```
 
 ### Options
 
 ```text
-npx pocketdev <port>          Expose port with terminal QR code
-npx pocketdev <port> --no-qr  Expose port without printing QR code
-npx pocketdev --help          Show help message
-npx pocketdev --version       Show version
+npx @fullstacked-labs/pocketdev <port>          Expose port with terminal QR code
+npx @fullstacked-labs/pocketdev <port> --no-qr  Expose port without printing QR code
+npx @fullstacked-labs/pocketdev --help          Show help message
+npx @fullstacked-labs/pocketdev --version       Show version
 ```
 
 ---

@@ -1,6 +1,9 @@
 {
-  "name": "pocketdev",
+  "name": "@fullstacked-labs/pocketdev",
   "version": "0.1.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Instant zero-config HTTPS tunnel for testing local web apps on mobile devices with working HMR and microphone/camera permissions.",
   "type": "module",
   "main": "src/index.js",

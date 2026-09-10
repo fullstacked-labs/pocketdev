@@ -4,7 +4,7 @@ import { createMasqueradeProxy } from './proxy.js';
 import { detectDevPorts, findFreePort, parseTarget } from './port.js';
 import { ensureBinary, startTunnel } from './tunnel.js';
 
-const VERSION = '0.1.0';
+const VERSION = '0.1.1';
 
 export function printHelp() {
   console.log(`

@@ -380,3 +380,94 @@ test('Proxy injects Connection: close on chunked Transfer-Encoding requests', as
   });
   assert.strictEqual(backendConnectionHeader, 'close', 'Should set Connection: close for chunked transfers');
 });
+
+test('Tunnel parses Cloudflare Edge location from log output', async (t) => {
+  const { startTunnel } = await import('../src/tunnel.js');
+  if (process.platform === 'win32') { t.skip('Shell script stub test skipped on Windows'); return; }
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const path = await import('node:path');
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'devhop-loc-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const stub = path.join(dir, 'fake-cloudflared.sh');
+  fs.writeFileSync(stub, '#!/bin/sh\necho "2026-01-01 INF Registered tunnel connection connIndex=0 location=arn" >&2\nsleep 0.2\n');
+  fs.chmodSync(stub, '755');
+
+  const locations = [];
+  await new Promise((resolve) => {
+    startTunnel({
+      localPort: 3000,
+      binPath: stub,
+      onLocation: (loc) => locations.push(loc),
+      onClose: () => resolve(),
+    });
+  });
+
+  assert.deepStrictEqual(locations, ['ARN']);
+});
+
+test('Tunnel location regex matches location=([A-Z0-9]+) case-insensitively', () => {
+  const samples = [
+    ['INF Registered tunnel connection connIndex=0 location=ARN', 'ARN'],
+    ['connIndex=3 location=lhr', 'LHR'],
+    ['location=SIN col=1', 'SIN'],
+  ];
+  for (const [line, expected] of samples) {
+    const m = line.match(/location=([A-Z0-9]+)/i);
+    assert.ok(m, `Should match edge location in: ${line}`);
+    assert.strictEqual(m[1].toUpperCase(), expected);
+  }
+  assert.strictEqual('no edge info here'.match(/location=([A-Z0-9]+)/i), null);
+});
+
+test('Tunnel keeps 10-line ring buffer of recent output on premature exit', async (t) => {
+  const { startTunnel } = await import('../src/tunnel.js');
+  const fs = await import('node:fs');
+  if (process.platform === 'win32') { t.skip('Shell script stub test skipped on Windows'); return; }
+  const os = await import('node:os');
+  const path = await import('node:path');
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'devhop-ring-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const stub = path.join(dir, 'fake-cloudflared.sh');
+  const lines = Array.from({ length: 15 }, (_, i) => `echo "log line ${i + 1}" >&2`).join('\n');
+  fs.writeFileSync(stub, `#!/bin/sh\n${lines}\nexit 1\n`);
+  fs.chmodSync(stub, '755');
+
+  const details = await new Promise((resolve) => {
+    startTunnel({
+      localPort: 3000,
+      binPath: stub,
+      onClose: (_code, d) => resolve(d),
+    });
+  });
+
+  const kept = details.recentOutput.split('\n');
+  assert.strictEqual(kept.length, 10, 'Ring buffer should cap at 10 lines');
+  assert.deepStrictEqual(kept, Array.from({ length: 10 }, (_, i) => `log line ${i + 6}`));
+});
+
+test('Tunnel passes --protocol http2 to cloudflared when requested', async (t) => {
+  const { startTunnel } = await import('../src/tunnel.js');
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  if (process.platform === 'win32') { t.skip('Shell script stub test skipped on Windows'); return; }
+  const path = await import('node:path');
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'devhop-proto-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const stub = path.join(dir, 'fake-cloudflared.sh');
+  fs.writeFileSync(stub, '#!/bin/sh\necho "ARGS:$@"\n');
+  fs.chmodSync(stub, '755');
+
+  const withHttp2 = await new Promise((resolve) => {
+    startTunnel({ localPort: 3000, binPath: stub, protocol: 'http2', onClose: (_c, d) => resolve(d) });
+  });
+  assert.match(withHttp2.recentOutput, /--protocol http2/, 'http2 protocol must add --protocol http2 args');
+
+  const without = await new Promise((resolve) => {
+    startTunnel({ localPort: 3000, binPath: stub, onClose: (_c, d) => resolve(d) });
+  });
+  assert.doesNotMatch(without.recentOutput, /--protocol/, 'Default tunnel must not pass --protocol');
+});

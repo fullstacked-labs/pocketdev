@@ -6,6 +6,12 @@ import { ensureBinary, startTunnel } from './tunnel.js';
 
 const VERSION = '0.1.2';
 
+const AIRPORT_CITIES = {
+  ARN: 'Stockholm', LHR: 'London', FRA: 'Frankfurt', CDG: 'Paris', AMS: 'Amsterdam',
+  JFK: 'New York', EWR: 'Newark', SFO: 'San Francisco', LAX: 'Los Angeles',
+  ORD: 'Chicago', DFW: 'Dallas', IAD: 'Washington DC', ATL: 'Atlanta',
+  NRT: 'Tokyo', HND: 'Tokyo', SIN: 'Singapore', SYD: 'Sydney', HKG: 'Hong Kong'
+};
 export function printHelp() {
   console.log(`
 ${pc.bold(pc.cyan('🦘 devhop'))} ${pc.dim(`v${VERSION}`)}
@@ -16,6 +22,7 @@ ${pc.bold('Usage:')}
   ${pc.green('npx devhop')}                  Auto-detect active dev server port
   ${pc.green('npx devhop <target> --no-qr')}  Expose without printing QR code
   ${pc.green('npx devhop <target> --json')}   Output tunnel metadata as JSON (for agents)
+  ${pc.green('npx devhop <target> --http2')}  Use HTTP/2 transport (corporate firewall bypass)
   ${pc.green('npx devhop --help')}           Show this help message
   ${pc.green('npx devhop --version')}        Show version
 
@@ -44,9 +51,10 @@ export async function run(args = []) {
     console.log(`v${VERSION}`);
     return;
   }
-
   const isJson = args.includes('--json');
   const showQr = !args.includes('--no-qr') && !isJson;
+  const protocolIdx = args.indexOf('--protocol');
+  const protocol = (args.includes('--http2') || (protocolIdx !== -1 && args[protocolIdx + 1] === 'http2')) ? 'http2' : undefined;
   let targetPort = null;
   let targetHost = '127.0.0.1';
   const targetArg = args.find((a) => !a.startsWith('-') && parseTarget(a));
@@ -89,6 +97,7 @@ export async function run(args = []) {
   const proxyPort = await findFreePort();
 
   let publicUrl = null;
+  let edgeLocation = null;
 
   // Create reverse proxy with header masquerade & response rewriting
   const { server, proxy } = createMasqueradeProxy({
@@ -126,12 +135,20 @@ export async function run(args = []) {
   tunnelHandle = startTunnel({
     localPort: proxyPort,
     binPath,
+    protocol,
     onUrl: (url) => {
       publicUrl = url;
       if (isJson) {
         console.log(JSON.stringify({ url, target: `http://${targetHost}:${targetPort}`, port: targetPort, host: targetHost }));
       } else {
-        displayDashboard(url, targetPort, targetHost, showQr);
+        displayDashboard(url, targetPort, targetHost, showQr, edgeLocation);
+      }
+    },
+    onLocation: (loc) => {
+      const formatted = AIRPORT_CITIES[loc] ? `${loc} (${AIRPORT_CITIES[loc]})` : loc;
+      if (formatted !== edgeLocation) {
+        edgeLocation = formatted;
+        if (publicUrl && !isJson) displayDashboard(publicUrl, targetPort, targetHost, showQr, edgeLocation);
       }
     },
     onError: (err) => {
@@ -139,19 +156,24 @@ export async function run(args = []) {
       cleanup();
       process.exit(1);
     },
-    onClose: (code) => {
+    onClose: (code, details) => {
       if (!cleanedUp) {
-        if (code !== 0) {
-          console.error(pc.red(`\ncloudflared exited with code ${code}`));
+        const isError = (code !== 0 && code !== null) || (!details?.urlFound);
+        if (isError) {
+          const exitDesc = code !== null ? `code ${code}` : `signal ${details?.signal || 'UNKNOWN'}`;
+          console.error(pc.red(`\ncloudflared exited unexpectedly (${exitDesc}):`));
+          if (details?.recentOutput) {
+            console.error(pc.dim(details.recentOutput.split('\n').map((l) => '  > ' + l).join('\n')));
+          }
         }
         cleanup();
-        process.exit(code || 0);
+        process.exit(typeof code === 'number' && code !== 0 ? code : (isError ? 1 : 0));
       }
     }
   });
 }
 
-function displayDashboard(url, targetPort, targetHost, showQr) {
+function displayDashboard(url, targetPort, targetHost, showQr, edgeLocation) {
   console.clear();
   console.log('');
   console.log(pc.bold(pc.bgCyan(pc.black(' 🦘 DEVHOP '))));
@@ -159,11 +181,13 @@ function displayDashboard(url, targetPort, targetHost, showQr) {
   console.log(`  ${pc.bold('Target:')}       ${pc.green(`http://${targetHost}:${targetPort}`)}`);
   console.log(`  ${pc.bold('Mobile URL:')}   ${pc.bold(pc.underline(pc.cyan(url)))}`);
   console.log('');
+  if (edgeLocation) {
+    console.log(`  ${pc.green('✔')} Connected to Cloudflare Edge [${edgeLocation}]`);
+  }
   console.log(`  ${pc.green('✔')} ${pc.dim('Live updates on save active (phone refreshes automatically as you edit)')}`);
   console.log(`  ${pc.green('✔')} ${pc.dim('Real HTTPS padlock active (microphone, camera & voice dictation work)')}`);
   console.log(`  ${pc.green('✔')} ${pc.dim('Next.js & Vite safe (no "host not allowed" or blocked request errors)')}`);
   console.log(`  ${pc.green('✔')} ${pc.dim('Zero setup (no accounts, no tokens, no certificates to install)')}`);
-
   if (showQr) {
     console.log(pc.dim('  Scan with your iPhone or Android camera:'));
     qrcode.generate(url, { small: true }, (qr) => {

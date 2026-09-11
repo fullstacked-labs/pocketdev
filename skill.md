@@ -32,6 +32,9 @@ npx devhop 3000 --json
 
 # Run without printing terminal QR code (useful for headless / CI logs)
 npx devhop --no-qr
+
+# Corporate firewall bypass: route tunnel over HTTP/2 (TCP 443) when UDP/QUIC is blocked
+npx devhop 3000 --http2
 ```
 
 ## How It Works

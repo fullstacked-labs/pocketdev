@@ -50,27 +50,47 @@ export async function ensureBinary(onProgress) {
   }
 }
 
-export function startTunnel({ localPort, binPath, onUrl, onError, onClose }) {
-  const child = spawn(binPath, ['tunnel', '--no-autoupdate', '--url', `http://127.0.0.1:${localPort}`], {
+export function startTunnel({ localPort, binPath, protocol, onUrl, onLocation, onError, onClose }) {
+  const tunnelArgs = ['tunnel', '--no-autoupdate', '--url', `http://127.0.0.1:${localPort}`];
+  if (protocol === 'http2') {
+    tunnelArgs.push('--protocol', 'http2');
+  }
+  const child = spawn(binPath, tunnelArgs, {
     stdio: ['ignore', 'pipe', 'pipe']
   });
 
   let urlFound = false;
-
+  let lastLocation = null;
+  const recentOutput = [];
   const handleOutput = (data) => {
     const text = data.toString();
-    const match = text.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
-    if (match && !urlFound) {
+    for (const raw of text.split('\n')) {
+      const line = raw.trim();
+      if (line) {
+        recentOutput.push(line);
+        if (recentOutput.length > 10) recentOutput.shift();
+      }
+    }
+    const locMatch = text.match(/location=([A-Z0-9]+)/i);
+    if (locMatch && onLocation) {
+      const loc = locMatch[1].toUpperCase();
+      if (loc !== lastLocation) {
+        lastLocation = loc;
+        onLocation(loc);
+      }
+    }
+    const urlMatch = text.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
+    if (urlMatch && !urlFound) {
       urlFound = true;
-      if (onUrl) onUrl(match[0]);
+      if (onUrl) onUrl(urlMatch[0]);
     }
   };
 
   child.stdout.on('data', handleOutput);
   child.stderr.on('data', handleOutput);
 
-  if (onError) child.on('error', onError);
-  if (onClose) child.on('close', onClose);
+  if (onError) child.on('error', (err) => onError(err, { recentOutput: recentOutput.join('\n'), urlFound }));
+  if (onClose) child.on('close', (code, signal) => onClose(code, { recentOutput: recentOutput.join('\n'), urlFound, signal }));
 
   return {
     child,

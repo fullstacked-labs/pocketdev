@@ -15,4 +15,5 @@
 - Tolerant input parsing: accepts raw ports (`3000`), `host:port`, URLs (`http://localhost:5173`), and container addresses (`0.0.0.0`).
 - Generates compact Unicode terminal QR code for instant phone camera scanning.
 - Agent-ready: provides `--json` flag for automated AI coding agent workflows.
+- Corporate firewall bypass: `npx devhop [target] --http2` routes the tunnel over HTTP/2 (TCP 443) when UDP/QUIC is blocked.
 - Zero signup, zero accounts, zero cloud config, zero system daemons.

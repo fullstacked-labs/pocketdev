@@ -150,8 +150,17 @@ npx devhop                   Auto-detect active dev server port
 npx devhop [target]          Expose port, host:port, or URL with QR code
 npx devhop [target] --no-qr  Expose target without printing QR code
 npx devhop [target] --json   Output tunnel JSON (for AI agents & scripts)
+npx devhop [target] --http2  Route tunnel over HTTP/2 (corporate firewall bypass)
 npx devhop --help            Show help message
 npx devhop --version         Show version
+```
+
+### Corporate firewall bypass
+
+On office or cafe networks where UDP/QUIC is blocked, `cloudflared` may fail to connect. Force the tunnel over TCP port 443 instead:
+
+```bash
+npx devhop 3000 --http2
 ```
 
 ---

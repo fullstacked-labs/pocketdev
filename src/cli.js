@@ -25,12 +25,12 @@ ${pc.bold('Examples:')}
   ${pc.dim('$')} npx devhop 127.0.0.1:8080
   ${pc.dim('$')} npx devhop 0.0.0.0:4321
   ${pc.dim('$')} npx devhop http://localhost:5173
-${pc.bold('Features:')}
-  ${pc.green('✔')} ${pc.bold('Fast Refresh & HMR')}     Rewrites headers so Next.js & Vite never block cross-origin websockets
-  ${pc.green('✔')} ${pc.bold('Secure Context (HTTPS)')}   Trusted TLS for mobile Safari/Chrome microphone & camera access
-  ${pc.green('✔')} ${pc.bold('OAuth & Redirect Safe')}    Rewrites Location headers so redirects stay on mobile tunnel
-  ${pc.green('✔')} ${pc.bold('Session Cookie Friendly')}  Strips Domain=localhost so mobile browsers store auth cookies
-  ${pc.green('✔')} ${pc.bold('Zero Setup')}              No account, no signups, no root CA certs, no system daemons
+${pc.bold('What it does:')}
+  ${pc.green('✔')} ${pc.bold('Live Updates on Save')}      Your phone updates automatically when you edit code
+  ${pc.green('✔')} ${pc.bold('Real HTTPS Padlock')}        Microphone, camera, and voice dictation work without errors
+  ${pc.green('✔')} ${pc.bold('Framework Friendly')}        Next.js & Vite never show "host not allowed" or blocked screens
+  ${pc.green('✔')} ${pc.bold('Logins & Redirects Safe')}   Stays logged in and keeps you on the mobile link after forms
+  ${pc.green('✔')} ${pc.bold('Zero Setup')}                No accounts, no tokens, no certificates to install
 `);
 }
 
@@ -159,11 +159,10 @@ function displayDashboard(url, targetPort, targetHost, showQr) {
   console.log(`  ${pc.bold('Target:')}       ${pc.green(`http://${targetHost}:${targetPort}`)}`);
   console.log(`  ${pc.bold('Mobile URL:')}   ${pc.bold(pc.underline(pc.cyan(url)))}`);
   console.log('');
-  console.log(`  ${pc.green('✔')} ${pc.dim('Host & Origin Masquerade active (Next.js / Vite HMR Safe)')}`);
-  console.log(`  ${pc.green('✔')} ${pc.dim('Trusted HTTPS active (Microphone, Camera & WebCrypto Permitted)')}`);
-  console.log(`  ${pc.green('✔')} ${pc.dim('Location & Cookie domain rewrites active')}`);
-  console.log(`  ${pc.green('✔')} ${pc.dim('Zero configuration, no account required')}`);
-  console.log('');
+  console.log(`  ${pc.green('✔')} ${pc.dim('Live updates on save active (phone refreshes automatically as you edit)')}`);
+  console.log(`  ${pc.green('✔')} ${pc.dim('Real HTTPS padlock active (microphone, camera & voice dictation work)')}`);
+  console.log(`  ${pc.green('✔')} ${pc.dim('Next.js & Vite safe (no "host not allowed" or blocked request errors)')}`);
+  console.log(`  ${pc.green('✔')} ${pc.dim('Zero setup (no accounts, no tokens, no certificates to install)')}`);
 
   if (showQr) {
     console.log(pc.dim('  Scan with your iPhone or Android camera:'));

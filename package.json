@@ -4,7 +4,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "description": "Hop local web dev servers onto mobile devices in seconds with working HTTPS, HMR, and microphone/camera permissions.",
+  "description": "Hop local web dev servers onto your phone in seconds with live updates, real HTTPS, and working microphone/camera permissions.",
   "type": "module",
   "main": "src/index.js",
   "exports": {

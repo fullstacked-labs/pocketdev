@@ -1,18 +1,18 @@
 # DevHop Skill for AI Coding Agents
 
 Use this skill when a user wants to:
-1. **Test local web apps on physical mobile devices** (iPhone Safari, Android Chrome).
-2. **Test browser hardware Web APIs** that require a trusted HTTPS Secure Context:
-   - Microphone / Speech-to-Text (`navigator.mediaDevices.getUserMedia`)
-   - Camera capture
-   - WebCrypto (`crypto.subtle`)
-   - WebShare and PWA installation
-3. **Overcome framework cross-origin dev server blocking**:
-   - Next.js 14–16 `allowedDevOrigins` WebSocket / HMR rejection
-   - Next.js Server Action CSRF origin mismatches
-   - Vite `Invalid Host header`
+1. **Test a local website or web app on their phone** (iPhone Safari, Android Chrome).
+2. **Test features that require HTTPS on mobile**:
+   - Microphone, voice dictation, and speech-to-text (`navigator.mediaDevices.getUserMedia`)
+   - Camera access and barcode/photo capture
+   - WebCrypto, Passkeys, and FaceID/TouchID login
+   - "Add to Home Screen" PWA testing
+3. **Fix framework mobile errors**:
+   - Next.js "Blocked cross-origin request" / `allowedDevOrigins`
+   - Next.js Server Actions CSRF origin mismatches
+   - Vite "Blocked request: host not allowed"
 4. **Test apps running in Docker / WSL2**:
-   - Apps bound to `0.0.0.0` or running inside containers
+   - Servers bound to `0.0.0.0` or container IPs
 
 ## Commands
 ```bash
@@ -22,25 +22,28 @@ npx devhop
 # Specify port explicitly
 npx devhop 3000
 
-# Tolerant target inputs (agents can pass full terminal output URLs or hosts)
+# Tolerant target inputs (agents can pass full URLs or hosts from terminal output)
 npx devhop http://localhost:5173
 npx devhop localhost:3000
 npx devhop 0.0.0.0:4321
-npx devhop [::1]:3000
 
-# Run without printing terminal QR code (useful for headless / CI / raw logs)
+# Output clean JSON for automation
+npx devhop 3000 --json
+
+# Run without printing terminal QR code (useful for headless / CI logs)
 npx devhop --no-qr
 ```
 
 ## How It Works
-1. **Ephemeral Cloudflare Quick Tunnel**: Creates an instant, trusted HTTPS tunnel (`https://*.trycloudflare.com`) with zero account or token setup.
-2. **In-Process Header Masquerade**: Reverse proxy automatically rewrites `Host`, `Origin`, and `Referer` to `localhost:<port>`, making the upstream framework believe requests originate from a local browser tab on loopback.
-3. **Secure Context Activation**: Grants mobile Safari and Chrome full access to `getUserMedia`, camera, and crypto without installing custom root CA certificates or provisioning `mkcert`.
-4. **Unbuffered Streaming**: Disables buffering on Server-Sent Events (SSE) and AI token streams (`X-Accel-Buffering: no` and TCP `noDelay`).
-5. **Dev Server Reboot Resilience**: Recovers cleanly from `ECONNREFUSED` with `502 Bad Gateway` and `Retry-After: 1` during framework restarts without dropping the tunnel.
+1. **Instant trusted HTTPS**: Creates a temporary, trusted HTTPS link via Cloudflare's edge with zero account setup.
+2. **Framework friendly**: Relabels incoming requests in-process so Next.js and Vite treat the phone as a local browser tab running on loopback, completely avoiding cross-origin blocks.
+3. **Live updates on save**: Preserves the live WebSocket connection so your phone updates automatically as you edit code.
+4. **Real HTTPS padlock**: Mobile Safari and Chrome grant full access to microphone, camera, and WebCrypto without certificate warnings.
+5. **Survives server restarts**: Recovers from `ECONNREFUSED` during Vite or Next.js rebuilds without dropping the tunnel.
 
 ## Instructions for AI Agents
 - When the user asks to preview their app on a phone or test microphone/camera: invoke `npx devhop` (or pass the port/URL if known).
-- Parse the output for the public `https://*.trycloudflare.com` URL and QR code, then present them clearly to the user.
-- Explicitly tell the user that microphone, camera, and speech dictation work immediately because trusted HTTPS is active.
+- Parse the output for the public `https://*.trycloudflare.com` URL and QR code, then present them cleanly to the user.
+- **Speak in human terms**: Do not burden the user with jargon like "HMR" or "header masquerading". Say:
+  > *"Here is your mobile preview link. Scan the QR code with your phone camera to open it. Live updates on save, microphone, and camera access will work automatically."*
 - To shut down: send `SIGINT` (Ctrl+C). DevHop guarantees clean child process termination with zero orphan process leaks.

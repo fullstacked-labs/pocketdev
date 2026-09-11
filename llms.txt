@@ -1,5 +1,5 @@
 # devhop
-> Zero-config mobile dev proxy for testing local web apps on physical phones with working HMR, Next.js Server Actions, and microphone/camera permissions.
+> Zero-config mobile dev proxy for testing local web apps on physical phones with live updates on save, Next.js Server Actions, and working microphone/camera permissions.
 
 - CLI: `npx devhop [target]`
 - Repo: https://github.com/fullstacked-labs/devhop
@@ -7,11 +7,11 @@
 - Docs: https://github.com/fullstacked-labs/devhop#readme
 
 ## Key Capabilities
-- Solves Next.js 14–16 `allowedDevOrigins` cross-origin HMR WebSocket blocking.
-- Solves Next.js Server Actions CSRF origin mismatch and rewrites `x-action-redirect`.
-- Solves Vite 6 `server.allowedHosts` DNS rebinding 403 Forbidden errors.
-- Grants Mobile Safari & Android Chrome full Secure Context permissions (`getUserMedia`, camera, WebCrypto, Passkeys).
-- Masquerades Host, Origin, and Referer headers in-process to `localhost:<port>`.
+- Live updates on save: Preserves the live WebSocket connection so phones refresh automatically when code is saved.
+- Solves Next.js 14–16 `allowedDevOrigins` cross-origin blocking and Server Actions CSRF mismatch (`x-action-redirect`).
+- Solves Vite 6 `server.allowedHosts` "host not allowed" 403 Forbidden errors.
+- Grants Mobile Safari & Android Chrome full permissions for microphone (`getUserMedia`), camera, WebCrypto, and Passkeys via trusted HTTPS.
+- Relabels Host, Origin, and Referer headers in-process to `localhost:<port>` so dev servers treat the phone as local loopback traffic.
 - Tolerant input parsing: accepts raw ports (`3000`), `host:port`, URLs (`http://localhost:5173`), and container addresses (`0.0.0.0`).
 - Generates compact Unicode terminal QR code for instant phone camera scanning.
 - Agent-ready: provides `--json` flag for automated AI coding agent workflows.
